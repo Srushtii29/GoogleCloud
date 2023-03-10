@@ -1,38 +1,36 @@
 import webapp2
-class MainPage(webapp2.RequestHandler):
-    def get(self):
-    # build a list of operations
-        f = {'+': lambda x, y: str(float(x) + float(y)),
-             '-': lambda x, y: str(float(x) - float(y)),
-             '*': lambda x, y: str(float(x) * float(y)),
-             '/': lambda x, y: str(float(x) / float(y)),
-             'C': lambda x, y: "",
-            }
-        # get page parameters
-        x = self.request.get('x')
-        y = self.request.get('y')
-        operator = self.request.get('operator')
-        # calculate 
-        result = ""
-        try:
-            result = f[operator](x, y)
-        except ValueError:
-            result = "Error: Incorrect Number"
-        except ZeroDivisionError:
-            result = "Error: Division by zero"
-        except KeyError:
-            pass
-        # build HTML response
-        buttons = "".join(["<input type='submit' name='operator' value='"
-                           + o + "'>" for o in sorted(f.keys())])
-        self.response.out.write("""<html>
-            <body>
-            <form action='/' method='get' autocomplete='off'> 
-            <input type='text' name='x' value='%s'/><br/>
-            <input type='text' name='y'/><br/> 
-            %s 
-            </form>
-            </body>
-            </html>""" % (result, buttons))
+import jinja2
 
-app = webapp2.WSGIApplication([('/', MainPage)], debug=True)
+# Set up Jinja2 template environment
+jinja_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader('templates'))
+
+class CalculatorHandler(webapp2.RequestHandler):
+    def get(self):
+        # Render the calculator form using Jinja2 template
+        template = jinja_env.get_template('calculator.html')
+        self.response.write(template.render())
+
+    def post(self):
+        # Get user input from calculator form
+        num1 = float(self.request.get('num1'))
+        num2 = float(self.request.get('num2'))
+        operator = self.request.get('operator')
+
+        # Perform calculation based on selected operator
+        if operator == 'add':
+            result = num1 + num2
+        elif operator == 'subtract':
+            result = num1 - num2
+        elif operator == 'multiply':
+            result = num1 * num2
+        elif operator == 'divide':
+            result = num1 / num2
+
+        # Render the result using Jinja2 template
+        template = jinja_env.get_template('result.html')
+        self.response.write(template.render({'result': result}))
+
+app = webapp2.WSGIApplication([
+    ('/', CalculatorHandler),
+], debug=True)
